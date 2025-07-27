@@ -6,21 +6,46 @@
 #include "nvs_flash.h"
 #include "esp_log.h"
 #include "mqtt_client.h"
+#include "relay_control.h"
 
-#define WIFI_SSID "your-ssid"
-#define WIFI_PASS "your-password"
 #define MQTT_BROKER_URI "mqtt://broker.hivemq.com"
 
-static const char *TAG = "MQTT_EXAMPLE";
+static const char *TAG_MQTT = "MQTT";
+static const char *TOPIC = "/esp32/relay";
+esp_mqtt_client_handle_t client = NULL;
 
-// MQTT event handler
-esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event) {
-    esp_mqtt_client_handle_t client = event->client;
+void mqtt_event_handler(void *handler_args, esp_event_base_t base,
+    int32_t event_id, void *event_data) {
+    esp_mqtt_event_handle_t event = event_data;
     switch (event->event_id) {
         case MQTT_EVENT_CONNECTED:
-            ESP_LOGI(TAG, "MQTT connected");
-            esp_mqtt_client_publish(client, "/esp32/relay", "Hello from ESP32", 0, 1, 0);
+            ESP_LOGI(TAG_MQTT, "MQTT connected");
+            esp_mqtt_client_publish(client, TOPIC, "ESP32 connected", 0, 1, 0);
+            esp_mqtt_client_subscribe(client, TOPIC, 0);
+            ESP_LOGI(TAG_MQTT, "Subscribed to topic: %s", TOPIC);
             break;
+        case MQTT_EVENT_DATA: {
+            ESP_LOGI(TAG_MQTT, "MQTT message received:");
+            printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
+            printf("DATA=%.*s\r\n", event->data_len, event->data);
+
+            // Copy and parse message
+            char msg[32] = {0};
+            strncpy(msg, event->data, event->data_len);
+
+            char cmd[8];
+            int relay_num = 0;
+            if (sscanf(msg, "%7s %d", cmd, &relay_num) == 2 &&
+                relay_num >= 0 && relay_num <= 8) {
+                ESP_LOGI(TAG_MQTT, "Message: %s", msg);
+                ESP_LOGI(TAG_MQTT, "relay_num %d", relay_num);
+                control_relay(relay_num, strcmp(cmd, "START") == 0);
+            } else {
+                ESP_LOGW(TAG_MQTT, "Invalid message format: %s", msg);
+            }
+
+            break;
+        }
         default:
             break;
     }
@@ -30,40 +55,9 @@ esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event) {
 void mqtt_app_start(void) {
     esp_mqtt_client_config_t mqtt_cfg = {
         .uri = MQTT_BROKER_URI,
-        .event_handle = mqtt_event_handler_cb,
     };
-    esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
+
+    client = esp_mqtt_client_init(&mqtt_cfg);
+    esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
     esp_mqtt_client_start(client);
 }
-
-// Wi-Fi init
-void wifi_init(void) {
-    esp_netif_init();
-    esp_event_loop_create_default();
-    esp_netif_create_default_wifi_sta();
-
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    esp_wifi_init(&cfg);
-    wifi_config_t wifi_config = {
-        .sta = {
-            .ssid = WIFI_SSID,
-            .password = WIFI_PASS
-        },
-    };
-    esp_wifi_set_mode(WIFI_MODE_STA);
-    esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
-    esp_wifi_start();
-    esp_wifi_connect();
-}
-
-// void app_main(void) {
-//     esp_err_t ret = nvs_flash_init();
-//     if (ret == ESP_ERR_NVS_NO_FREE_PAGES) {
-//         nvs_flash_erase();
-//         ret = nvs_flash_init();
-//     }
-
-//     wifi_init();
-//     vTaskDelay(pdMS_TO_TICKS(3000));  // Wait for Wi-Fi to connect
-//     mqtt_app_start();
-// }

@@ -14,8 +14,7 @@ void app_main(void) {
     }
     ESP_ERROR_CHECK(ret);
     
-    //xTaskCreate(relay_control_task, "relay_control_task", 4096, NULL, 10, NULL);
-    // xTaskCreate(wifi_task, "wifi_task", 4096, NULL, 10, NULL);
+    relay_control_task(NULL);
     wifi_task(NULL);
     vTaskDelay(pdMS_TO_TICKS(3000));  // Wait for Wi-Fi to connect
     mqtt_app_start();

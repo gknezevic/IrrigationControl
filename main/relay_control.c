@@ -92,28 +92,13 @@ void read_relay_status() {
 void relay_control_task(void *arg) {
     configure_uart();
     
-    // Main control loop
-    while (1) {
-        // Example usage: Cycle through relays
-        for (int relay = 1; relay <= 8; relay++) {
-            set_relay_control_mode(relay);
-            vTaskDelay(pdMS_TO_TICKS(1000));
-            // Turn relay on
-            control_relay(relay, true);
-            vTaskDelay(pdMS_TO_TICKS(1000));
-            
-            // Read status
-            read_relay_status();
-            vTaskDelay(pdMS_TO_TICKS(1000));
-            
-            // Turn relay off
-            control_relay(relay, false);
-            vTaskDelay(pdMS_TO_TICKS(1000));
-            
-            // Read status again
-            read_relay_status();
-            vTaskDelay(pdMS_TO_TICKS(2000));
-        }
+    // Set Relay Control Mode for each relay
+    for (int relay = 1; relay <= 8; relay++) {
+        set_relay_control_mode(relay);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+
+        read_relay_status();
+        vTaskDelay(pdMS_TO_TICKS(2000));
     }
 }
 
