@@ -7,6 +7,7 @@
 #include "esp_log.h"
 #include "mqtt_client.h"
 #include "relay_control.h"
+#include "scheduler.h"
 
 #define MQTT_BROKER_URI "mqtt://broker.hivemq.com"
 
@@ -52,6 +53,7 @@ void mqtt_event_handler(void *handler_args, esp_event_base_t base,
                     // Wait for confirmation before turning on pump
                     control_relay(8, true);
                     esp_mqtt_client_publish(client, TOPIC, read_relay_status(), 0, 1, 0);
+                    turn_off_with_delay();
                 } else if (strcmp(cmd, "STATUS") == 0) {
                     ESP_LOGI(TAG_MQTT, "GET Status of relays");
                     esp_mqtt_client_publish(client, TOPIC, read_relay_status(), 0, 1, 0);
