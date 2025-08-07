@@ -45,11 +45,16 @@ void mqtt_event_handler(void *handler_args, esp_event_base_t base,
                     for (int i = 1; i <= 7; i++) {
                         control_relay(i, false);
                     }
+                    esp_mqtt_client_publish(client, TOPIC, read_relay_status(), 0, 1, 0);
                 } else if (strcmp(cmd, "START") == 0) {
                     ESP_LOGI(TAG_MQTT, "Starting pump and turning on relay %d", relay_num);
                     control_relay(relay_num, true);
                     // Wait for confirmation before turning on pump
                     control_relay(8, true);
+                    esp_mqtt_client_publish(client, TOPIC, read_relay_status(), 0, 1, 0);
+                } else if (strcmp(cmd, "STATUS") == 0) {
+                    ESP_LOGI(TAG_MQTT, "GET Status of relays");
+                    esp_mqtt_client_publish(client, TOPIC, read_relay_status(), 0, 1, 0);
                 } else {
                     ESP_LOGW(TAG_MQTT, "Unknown command: %s", cmd);
                 }
@@ -62,7 +67,6 @@ void mqtt_event_handler(void *handler_args, esp_event_base_t base,
         default:
             break;
     }
-    return ESP_OK;
 }
 
 void mqtt_app_start(void) {

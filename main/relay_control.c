@@ -59,21 +59,21 @@ void set_relay_control_mode(uint8_t relay_num) {
 }
 
 // Read relay status
-void read_relay_status() {
+char *read_relay_status() {
     uint8_t command[8];
     uint8_t response[BUF_SIZE];
     uint8_t resp_length;
     
     command[0] = MODBUS_ADDRESS;  
     command[1] = READ_RELAY;      
-    command[2] = 0x10;           
+    command[2] = 0x00;           
     command[3] = 0x00;           
     command[4] = 0x00;           
     command[5] = 0x08;           
     
     uint16_t crc = calculate_crc(command, 6);
-    command[6] = crc & 0xFF;
-    command[7] = (crc >> 8) & 0xFF;
+    command[6] = crc & 0xFF; //0x3D
+    command[7] = (crc >> 8) & 0xFF; //0xCC
     
     ESP_LOGI(TAG, "Sending command to read relay status");
     
@@ -81,12 +81,17 @@ void read_relay_status() {
         if (resp_length >= 5) {
             ESP_LOGI(TAG, "Relay status response received (%d bytes)", resp_length);
             for (int i = 0; i < resp_length; i++) {
-                printf("0x%02X ", response[i]);
+                ESP_LOGI(TAG, "Response: 0x%02X", response[i]);
             }
+            char *relays_status = binary_chars(response[3]);
+            ESP_LOGI(TAG, "Status response: %s", relays_status);
+            return relays_status;
         } else {
             ESP_LOGE(TAG, "Invalid response length");
+            return "Invalid response length";
         }
     }
+    return "Failed sending command to read relay status";
 }
 
 void relay_control_task(void *arg) {

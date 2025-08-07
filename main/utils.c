@@ -16,3 +16,12 @@ uint16_t calculate_crc(uint8_t *data, uint8_t length) {
     }
     return crc;
 }
+
+char *binary_chars(uint8_t input) {
+    static char buffer[9]; // 8 bits + null terminator
+    for (int i = 0; i < 8; i++) {
+        buffer[i] = (input & (1 << (7 - i))) ? '1' : '0';
+    }
+    buffer[8] = '\0'; // Null-terminate the string
+    return buffer;
+}
