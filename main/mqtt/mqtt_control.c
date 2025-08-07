@@ -35,11 +35,24 @@ void mqtt_event_handler(void *handler_args, esp_event_base_t base,
 
             char cmd[8];
             int relay_num = 0;
-            if (sscanf(msg, "%7s %d", cmd, &relay_num) == 2 &&
-                relay_num >= 0 && relay_num <= 8) {
+            if (sscanf(msg, "%7s %d", cmd, &relay_num) == 2 && relay_num >= 0 && relay_num <= 7) {
                 ESP_LOGI(TAG_MQTT, "Message: %s", msg);
                 ESP_LOGI(TAG_MQTT, "relay_num %d", relay_num);
-                control_relay(relay_num, strcmp(cmd, "START") == 0);
+                if (strcmp(cmd, "STOP") == 0) {
+                    ESP_LOGI(TAG_MQTT, "Stopping pump and turning off relay all relays");
+                    control_relay(8, false);
+                    // Wait for confirmation before turning off all other relays
+                    for (int i = 1; i <= 7; i++) {
+                        control_relay(i, false);
+                    }
+                } else if (strcmp(cmd, "START") == 0) {
+                    ESP_LOGI(TAG_MQTT, "Starting pump and turning on relay %d", relay_num);
+                    control_relay(relay_num, true);
+                    // Wait for confirmation before turning on pump
+                    control_relay(8, true);
+                } else {
+                    ESP_LOGW(TAG_MQTT, "Unknown command: %s", cmd);
+                }
             } else {
                 ESP_LOGW(TAG_MQTT, "Invalid message format: %s", msg);
             }

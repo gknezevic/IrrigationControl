@@ -93,13 +93,13 @@ void relay_control_task(void *arg) {
     configure_uart();
     
     // Set Relay Control Mode for each relay
-    for (int relay = 1; relay <= 8; relay++) {
-        set_relay_control_mode(relay);
-        vTaskDelay(pdMS_TO_TICKS(1000));
+    // for (int relay = 1; relay <= 8; relay++) {
+    //     set_relay_control_mode(relay);
+    //     vTaskDelay(pdMS_TO_TICKS(1000));
 
-        read_relay_status();
-        vTaskDelay(pdMS_TO_TICKS(2000));
-    }
+    //     read_relay_status();
+    //     vTaskDelay(pdMS_TO_TICKS(2000));
+    // }
 }
 
 // Send Modbus command and wait for response
